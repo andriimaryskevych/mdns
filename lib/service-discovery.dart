@@ -1,45 +1,38 @@
 import 'dart:async';
 import 'package:mdns_plugin/mdns_plugin.dart';
 
-class Delegate implements MDNSPluginDelegate {
-  Function _onServiceDiscovered;
+typedef void MDNSPluginFunction (MDNSService service);
 
-  MDNSPluginDelegate (Function _onServiceDiscovered) {
-    this._onServiceDiscovered = _onServiceDiscovered;
-  }
+class Delegate implements MDNSPluginDelegate {
+  final MDNSPluginFunction _onServiceDiscovered;
+
+  Delegate (this._onServiceDiscovered);
 
   void onDiscoveryStarted() {}
   void onDiscoveryStopped() {}
+  bool onServiceFound(MDNSService service) => true;
+  void onServiceResolved(MDNSService service) { _onServiceDiscovered(service); }
   void onServiceUpdated(MDNSService service) {}
   void onServiceRemoved(MDNSService service) {}
-
-  bool onServiceFound(MDNSService service) => true;
-  void onServiceResolved(MDNSService service) {
-      print("Resolved: $service");
-
-      for (String address in service.addresses) {
-        print(address);
-      }
-  }
 }
 
 class NetworkServiceDiscoveryService {
   String _serviceName;
   MDNSPlugin _plugin;
-  Completer<String> _completer;
+  Completer<MDNSService> _completer;
 
   NetworkServiceDiscoveryService(this._serviceName) {
-    _plugin = MDNSPlugin(Delegate());
+    _plugin = MDNSPlugin(Delegate(_onServiceDiscovered));
     _completer = Completer();
   }
 
-  Future<String> discover () {
+  Future<MDNSService> discover () {
     _plugin.startDiscovery(_serviceName);
 
     return _completer.future;
   }
 
-  void _onServiceDiscovered (MDNSService serive) {
-
+  void _onServiceDiscovered (MDNSService serivce) {
+    _completer.complete(serivce);
   }
 }
