@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mdns_plugin/mdns_plugin.dart';
+import 'package:mdns/service-discovery.dart';
 
 void main() => runApp(MyApp());
+
+const String COORDINATOR_SERVICE_NAME = '_coordinator._tcp';
 
 class MyApp extends StatelessWidget {
   @override
@@ -21,32 +24,6 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class Delegate implements MDNSPluginDelegate {
-  void onDiscoveryStarted() {
-      print("Discovery started");
-  }
-  void onDiscoveryStopped() {
-      print("Discovery stopped");
-  }
-  bool onServiceFound(MDNSService service) {
-      print("Found: $service");
-      return true;
-  }
-  void onServiceResolved(MDNSService service) {
-      print("Resolved: $service");
-
-      for (String address in service.addresses) {
-        print(address);
-      }
-  }
-  void onServiceUpdated(MDNSService service) {
-      print("Updated: $service");
-  }
-  void onServiceRemoved(MDNSService service) {
-      print("Removed: $service");
-  }
-}
-
 class _MyHomePageState extends State<MyHomePage> {
   List<String> items;
 
@@ -57,11 +34,22 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void initDiscovery() async {
-    MDNSPlugin mdns = new MDNSPlugin(Delegate());
+    print('Started');
 
-    mdns.startDiscovery("_onboarding._tcp", enableUpdating: true);
+    try {
+      List<MDNSService> services = await Future.wait([
+        NetworkServiceDiscoveryService().discover(COORDINATOR_SERVICE_NAME),
+        NetworkServiceDiscoveryService().discover(COORDINATOR_SERVICE_NAME)
+      ]);
 
-    print('Called after');
+      // MDNSService service = await NetworkServiceDiscoveryService().discover(COORDINATOR_SERVICE_NAME);
+      // MDNSService service1 = await NetworkServiceDiscoveryService().discover(COORDINATOR_SERVICE_NAME);
+
+      print(services);
+    } catch (Erorr) {
+      print('Error');
+    }
+
   }
 
   @override

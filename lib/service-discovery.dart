@@ -17,22 +17,40 @@ class Delegate implements MDNSPluginDelegate {
 }
 
 class NetworkServiceDiscoveryService {
-  String _serviceName;
   MDNSPlugin _plugin;
   Completer<MDNSService> _completer;
+  Timer timer;
 
-  NetworkServiceDiscoveryService(this._serviceName) {
+  NetworkServiceDiscoveryService() {
     _plugin = MDNSPlugin(Delegate(_onServiceDiscovered));
     _completer = Completer();
   }
 
-  Future<MDNSService> discover () {
-    _plugin.startDiscovery(_serviceName);
+  Future<MDNSService> discover (String service) {
+    _plugin.startDiscovery(service);
+
+    timer = Timer(Duration(seconds: 2), () => _resolveWithError(TimeoutException('Discovery timeout')));
 
     return _completer.future;
   }
 
   void _onServiceDiscovered (MDNSService serivce) {
+    _resolveWithData(serivce);
+  }
+
+  void _resolveWithData (MDNSService serivce) {
+    if (_completer.isCompleted) return;
+    _plugin.stopDiscovery();
+    timer.cancel();
+
     _completer.complete(serivce);
+  }
+
+  void _resolveWithError (Exception error) {
+    if (_completer.isCompleted) return;
+    _plugin.stopDiscovery();
+    timer.cancel();
+
+    _completer.completeError(error);
   }
 }
